@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import tailwind from 'twrnc'
@@ -43,7 +43,7 @@ const index = () => {
   }
 
   const addTask = () => {
-    if (judul === '' && mapel === '') return;
+      
     const newTask = {
       id: Date.now().toString(),
       judul: judul.trim(),
@@ -83,6 +83,9 @@ const index = () => {
   const deleteTask = (id: string) => {
     const filtered = list.filter((item) => item.id !== id);
     setList(filtered);
+
+    
+    
   }
 
   const handleEdit = () => {
@@ -139,10 +142,38 @@ const index = () => {
           </View>
           
 
-          <TouchableOpacity style={tailwind`bg-green-500 rounded-3xl p-5`}
-          onPress={isEditing ? handleEdit : addTask}>
+            <TouchableOpacity style={tailwind`bg-green-500 rounded-3xl p-5`}
+            onPress={() => {
+            if (judul.trim() === '' || mapel.trim() === '') {
+              Alert.alert('duh','Belum Kamu Isi!')
+              return; // Jangan lakukan apa-apa jika input kosong
+            }
+
+            if (judul.length < 3 && mapel.length < 3){
+              Alert.alert('Oi!!!','Bisa Nulis Kagak!!!')
+              return;
+            }
+
+            if (isEditing) {
+              Alert.alert(
+              'Konfirmasi',
+              'Apakah kamu yakin ingin mengedit tugas ini?',
+              [
+                { text: 'Batal', style: 'cancel' },
+                { text: 'Ya, Edit', onPress: () => {
+                handleEdit();
+                Alert.alert('Berhasil', 'Tugas berhasil diedit!');
+                }
+                },
+              ]
+              );
+            } else {
+              addTask();
+              Alert.alert('Berhasil', 'Tugas berhasil ditambahkan!');
+            }
+            }}>
             <Text style={tailwind`text-white text-center text-xl font-bold`}>Masukan Tugas</Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
 
           {showDatePicker && (
             <DateTimePicker
@@ -154,27 +185,68 @@ const index = () => {
           )}
         </View>
       </View>
-        <View style={tailwind`bg-white h-full rounded-3xl p-10 mx-5`}>
+      <View style={tailwind`bg-white h-full rounded-3xl p-10 mx-5`}>
+        {list.length === 0 ? (
+          <Text style={tailwind`text-md font-bold mb-5 text-center text-gray-500`}>YEAY GAK ADA TUGAS</Text>
+        ) : (
+          <Text style={tailwind`text-md font-bold mb-5 text-gray-500`}>ADA TUGAS NI KAMU!</Text>
+        )}
+        
           <ScrollView>
             <FlatList
             style={tailwind`mb-130`}
             data={list}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-                <View style={tailwind`flex-row justify-between items-center mb-5 w-full p-5 rounded-3xl border border-gray-300 shadow bg-white`}>
+              <View style={tailwind`flex-row justify-between items-center mb-5 w-full p-5 rounded-3xl border border-gray-300 shadow bg-white`}>
+                <View>
+                  <TouchableOpacity 
+                  style={item.isChecked ? tailwind`border border-white rounded h-6 w-6 bg-green-500` : tailwind`border border-gray-500 rounded h-6 w-6`} 
+                  onPress={() => {
+                    const updatedList = list.map((task) =>
+                    task.id === item.id ? { ...task, isChecked: !task.isChecked } : task
+                    );
+                    setList(updatedList);
+                  }}
+                  >
+                  {item.isChecked && <View style={tailwind`bg-green-500 w-full h-full rounded items-center justify-center`}>
+                      <Text>✔</Text>
+                    </View>}
+                  </TouchableOpacity>
+                </View>
                 <View style={tailwind`gap-3`}>
                   <Text style={tailwind`font-bold text-2xl`}>{item.mapel}</Text>
                   <Text style={tailwind``}>{item.judul}</Text>
                   <Text style={tailwind``}>{item.deadline}</Text>
                 </View>
                 <View style={tailwind`items-center gap-3`}>
-                  <TouchableOpacity onPress={() => startEdit(item)}
+                  <TouchableOpacity onPress={() => {
+                    Alert.alert(
+                      'Konfirmasi',
+                      'Apakah kamu yakin ingin mengedit tugas ini?',
+                      [
+                      { text: 'Batal', style: 'cancel' },
+                      { text: 'Mulai Edit', onPress: () => startEdit(item) },
+                      ]
+                    )
+                  }}
                     style={tailwind`bg-yellow-400 shadow-lg rounded-xl p-2 items-center justify-center w-15 h-15`}>
                     <AntDesign name='edit' size={35} color='black'/>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => {
-                    const updatedList = list.filter((task) => task.id !== item.id);
-                    setList(updatedList);
+                    Alert.alert(
+                      'Konfirmasi',
+                      'Apakah kamu yakin ingin menghapus tugas ini?',
+                      [
+                      { text: 'Batal', style: 'cancel' },
+                      { text: 'Hapus', style: 'destructive', onPress: () => {
+                        const updatedList = list.filter((task) => task.id !== item.id);
+                        setList(updatedList);
+                        Alert.alert('Data berhasil dihapus');
+                        }
+                      },
+                      ]
+                    );
                   }}
                     style={tailwind`bg-red-400 shadow-lg rounded-xl p-2 items-center justify-center w-15 h-15`}>
                     <EvilIcons name='trash' size={35} color='black'/>
@@ -187,7 +259,7 @@ const index = () => {
             scrollEnabled={false}
             />
             </ScrollView>
-        </View>
+      </View>
     </View>
   )
 }

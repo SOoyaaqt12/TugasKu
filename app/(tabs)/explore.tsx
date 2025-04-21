@@ -1,109 +1,193 @@
-import { StyleSheet, Image, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import tailwind from 'twrnc'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { AntDesign, EvilIcons } from '@expo/vector-icons'
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 
-export default function TabTwoScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
-  );
+
+const index = () => {
+
+const [isChecked, setIsChecked] = useState(false);
+const [task, setTask] = useState('')
+const [list, setList] = useState([])
+const [isEditing, setIsEditing] = useState(false);
+const [editId, setEditId] = useState(null);
+
+const addTask = () => {
+  if (task.trim() === '') return;
+
+  const newTask = {
+    id: Date.now().toString(),
+    title: task.trim(),
+    isChecked: false,
+  };
+
+  setList([...list, newTask]);
+  setTask('');
+};
+
+const saveTasks = async() => {
+  try {
+    await AsyncStorage.setItem('tasks', JSON.stringify(list));
+    console.log('Berhasil simpan');
+  } catch (error) {
+    console.log('Gagal simpan:', error);
+  }
+};
+
+const loadTasks = async() => {
+  try {
+    const saved = await AsyncStorage.getItem('tasks');
+    if (saved !== null) {
+      setList(JSON.parse(saved));
+    }
+  } catch (error) {
+    console.log('Gagal load:', error);
+  }
+};
+
+const deleteTask = (id: string) => {
+  const filtered = list.filter((item) => item.id !== id);
+  setList(filtered);
+};
+
+const handleEdit = () => {
+  const updated = list.map(item => item.id === editId ? {...item, title: task} : item);
+  setList(updated);
+  setIsEditing(false);
+  setEditId(null);
+  setTask('');
 }
 
-const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-});
+const startEdit = (item:any) => {
+  setTask(item.title);
+  setIsEditing(true);
+  setEditId(item.id);
+}
+
+useEffect(() => {
+  loadTasks();
+}, []);
+
+useEffect(() => {
+  saveTasks();
+}, [list]);
+
+
+  return (
+    <View style={tailwind`bg-blue-500 h-full`}>
+      <View style={tailwind`bg-blue-500 h-full`}>
+        <Text style={tailwind`text-3xl font-bold mt-15 mx-10 mb-10`}>📚 nGopoyo</Text>
+        <View style={tailwind`gap-3 bg-white shadow-2xl p-10 rounded-3xl mx-3 flex-row items-center justify-between mb-5`}>
+          {/* Input */}
+            <TextInput style={tailwind`bg-white border-2 border-gray-300 rounded-xl p-5 w-80%`} placeholder='Mau Ngapain Hari Ini?'
+            value={task}
+            onChangeText={setTask}
+            />
+            <TouchableOpacity style={tailwind`w-20% bg-blue-500 rounded-xl items-center justify-center h-15`}
+            onPress={() => {
+              if (task.trim() === '') {
+                Alert.alert('Error', 'Tugas tidak boleh kosong')
+                return; // jangan lakukan apa-apa jika task kosong
+              } 
+
+              if (task.length < 2) {
+                Alert.alert('Error', 'Tugas terlalu pendek')
+                return; // jangan lakukan apa-apa jika task terlalu pendek
+              }
+
+              if (isEditing) {
+                Alert.alert(
+                  'Konfirmasi',
+                  'Apakah Kamu yakin ingin mengubah tugas ini?',
+                  [
+                    {text: 'Batal', style: 'cancel'},
+                    {text: 'Ubah', onPress: () =>{
+                      handleEdit();
+                      Alert.alert('Berhasil', 'Tugas berhasil diubah');
+                    }},
+                  ]
+                );
+              } else {
+                addTask();
+                Alert.alert('Berhasil', 'Tugas berhasil ditambahkan');
+              }
+            }}>
+              <Text style={tailwind`text-white text-center font-bold text-3xl`}>+</Text>
+            </TouchableOpacity>
+        </View>
+        <View style={tailwind`bg-white h-full rounded-3xl p-10 mx-3`}>
+          {list.length === 0 ? (
+            <Text style={tailwind`text-md font-bold mb-5 text-center text-gray-500`}>YEAY GAK ADA TUGAS</Text>
+          ) : (
+            <Text style={tailwind`text-md font-bold mb-5 text-gray-500`}>ADA TUGAS NI KAMU!</Text>
+          )}
+
+          <ScrollView>
+          <FlatList
+            scrollEnabled={false}
+            data={list}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={tailwind`flex-row justify-between items-center mb-5`}>
+                <View style={tailwind`flex-row items-center gap-3`}>
+                  <View style={tailwind`flex-row items-center gap-3`}>
+                    <TouchableOpacity 
+                    style={item.isChecked ? tailwind`border border-white rounded h-6 w-6 bg-green-500` : tailwind`border border-gray-500 rounded h-6 w-6`} 
+                    onPress={() => {
+                      const updatedList = list.map((task) =>
+                      task.id === item.id ? { ...task, isChecked: !task.isChecked } : task
+                      );
+                      setList(updatedList);
+                    }}
+                    >
+                    {item.isChecked && <View style={tailwind`bg-green-500 w-full h-full rounded items-center justify-center`}>
+                      <Text>✔</Text>
+                    </View>}
+                    </TouchableOpacity>
+                    <Text style={tailwind``}>{item.title}</Text>
+                  </View>
+                </View>
+                <View style={tailwind`flex-row items-center gap-3`}>
+                  <TouchableOpacity onPress={() => {
+                    Alert.alert(
+                      'Konfirmasi',
+                      'Apakah Kamu yakin ingin mengubah agenda ini?',
+                      [
+                        {text: 'Batal', style: 'cancel'},
+                        {text: 'Ubah', style: 'destructive', onPress: () => startEdit(item)},
+                      ]
+                    )
+                  }}>
+                    <AntDesign name='edit' size={30} color='blue'/>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => {
+                    Alert.alert(
+                      'Konfirmasi',
+                      'Apakah Kamu yakin ingin menghapus agenda ini?',
+                      [
+                        {text: 'Batal', style: 'cancel'},
+                        {text: 'Hapus', style: 'destructive', onPress: () => {
+                      const updatedList = list.filter((task) => task.id !== item.id);
+                      setList(updatedList);
+                      } } 
+                      ]
+                    )
+                  }}>
+                    <EvilIcons name='trash' size={40} color='red'/>
+                  </TouchableOpacity>
+                </View>
+                
+              </View>
+            )}/>
+          </ScrollView>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+
+export default index
